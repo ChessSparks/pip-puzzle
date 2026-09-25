@@ -1,6 +1,7 @@
 // Interactive first-level tutorial. Each step waits for the player to actually
 // perform the action. Desktop gets a full card with illustrations; touch gets
 // a compact one-line bar plus an animated finger drawn over the real controls.
+import { storage } from '../core/storage.js';
 import { sfx } from '../audio/sfx.js';
 
 const STORAGE_KEY = 'crateKeeper.tutorialDone';
@@ -116,11 +117,7 @@ export class Tutorial {
   }
 
   static get done() {
-    try {
-      return localStorage.getItem(STORAGE_KEY) === '1';
-    } catch {
-      return false;
-    }
+    return storage.get(STORAGE_KEY) === '1';
   }
 
   get active() {
@@ -153,11 +150,7 @@ export class Tutorial {
     this.el.classList.add('hidden');
     this.hand.classList.add('hidden');
     document.body.classList.remove('tut-dpad');
-    try {
-      localStorage.setItem(STORAGE_KEY, '1');
-    } catch {
-      /* private mode etc. — tutorial just shows again next time */
-    }
+    storage.set(STORAGE_KEY, '1');
     this.onStepChange?.(null);
   }
 

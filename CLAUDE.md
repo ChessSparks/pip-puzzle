@@ -10,6 +10,7 @@ framework, no build step beyond Vite. All models are procedural placeholders.
 - `npm run build` — production build to `dist/`
 - `npm run solve` — replay every level's stored `solution`; `-- --optimal` runs a full BFS
   (big levels: `node --max-old-space-size=6000 tools/solve.js --optimal`)
+- `npm run promo` — store covers + gameplay videos into `promo/` (dev server running).
 - `npm run playtest` — plays every level in headless Chrome with real key presses and
   checks it is won. Needs the dev server running; set `PLAYTEST_URL` if not on :5173.
   Options: `-- --level 4`, `-- --shots <dir>` (start/mid/win screenshots).
@@ -27,11 +28,13 @@ framework, no build step beyond Vite. All models are procedural placeholders.
 src/
   main.js            entry: creates UI + Game
   Game.js            flow only: menu <-> playing, load level, input -> move, win/progress
+  platform.js        CrazyGames SDK v3 wrapper (gameplay events, midgame ads, mute, saves)
   core/              no three.js, no DOM (safe to import from Node tools)
     Level.js         rules: tiles, moving, pushing, water/bridges, ice sliding, undo
     levels.js        CHAPTERS (name + levels), flat LEVELS (each has `chapter`), starsFor()
     levels/*.js      one file per chapter (firstSteps is hand-made; the rest generated)
-    progress.js      localStorage: unlocked levels, best moves
+    storage.js       save backend: localStorage, or CrazyGames SDK.data (set by platform.js)
+    progress.js      unlocked levels, best moves (via storage.js)
     anim.js          tween runner (`background` tweens don't block input)
   render/
     Stage.js         renderer, scene, lights, camera/orbit controls, framing, screen->grid dirs
@@ -82,6 +85,11 @@ player can't push two crates in a row.
   (e.g. the player returns `{ group, body, antennaTip, eyes }`).
 - Effects that shouldn't delay the next move use `anim.add(..., { background: true })`.
 - localStorage keys are `crateKeeper.*` (kept from the old name so saved progress survives).
-- Every localStorage access is wrapped in try/catch.
+- Saves go through `core/storage.js` (never localStorage directly) so they sync via
+  CrazyGames `SDK.data` when hosted there; every access is wrapped in try/catch.
+- CrazyGames SDK: all calls go through `platform.js` and are no-ops if the SDK is missing
+  or disabled (`?nosdk` skips it). `gameplayStart` when a level is being played,
+  `gameplayStop` on win/menu/ads; midgame ads only between levels (`Game.nextLevel`);
+  ads pause input and mute audio. On localhost the SDK runs in `local` mode with fake ads.
 - UI must work at phone width: touch mode (`body.touch`) shows the D-pad and stacks the
   undo/restart buttons; portrait views rotate wide levels so the long axis runs vertically.

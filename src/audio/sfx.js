@@ -1,13 +1,12 @@
 // Procedural sound effects via WebAudio — no audio files needed.
+import { storage } from '../core/storage.js';
 
 let ctx = null;
 const MUTE_KEY = 'crateKeeper.muted';
-let muted = false;
-try {
-  muted = localStorage.getItem(MUTE_KEY) === '1';
-} catch {
-  /* default: sound on */
-}
+let muted = null; // player's own toggle, read from storage on first use
+const forced = new Set(); // platform mutes by reason ('portal', 'ad')
+const playerMuted = () => (muted ??= storage.get(MUTE_KEY) === '1');
+const isMuted = () => forced.size > 0 || playerMuted();
 
 function audio() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -16,7 +15,7 @@ function audio() {
 }
 
 function tone(freq, dur, { type = 'sine', vol = 0.12, slideTo = null, delay = 0 } = {}) {
-  if (muted) return;
+  if (isMuted()) return;
   const ac = audio();
   const t0 = ac.currentTime + delay;
   const osc = ac.createOscillator();
@@ -34,7 +33,7 @@ function tone(freq, dur, { type = 'sine', vol = 0.12, slideTo = null, delay = 0 
 
 // Short burst of filtered noise (splashes).
 function noise(dur, { vol = 0.2, from = 1800, to = 300 } = {}) {
-  if (muted) return;
+  if (isMuted()) return;
   const ac = audio();
   const t0 = ac.currentTime;
   const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
@@ -75,16 +74,19 @@ export const sfx = {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, { type: 'triangle', vol: 0.1, delay: i * 0.11 }));
   },
   toggleMute() {
-    muted = !muted;
-    try {
-      localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
-    } catch {
-      /* not persisted */
-    }
-    return muted;
+    muted = !playerMuted();
+    storage.set(MUTE_KEY, muted ? '1' : '0');
+    return isMuted();
   },
   get muted() {
-    return muted;
+    return isMuted();
+  },
+  // Platform mute (portal setting or an ad playing): silences sounds already
+  // playing too, without touching the player's saved preference.
+  setForcedMute(reason, on) {
+    if (on) forced.add(reason);
+    else forced.delete(reason);
+    if (ctx) (forced.size ? ctx.suspend() : ctx.resume()).catch(() => {});
   },
 };
 

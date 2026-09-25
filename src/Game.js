@@ -11,6 +11,7 @@ import { Backdrop } from './render/Backdrop.js';
 import { sfx, playMoveSounds } from './audio/sfx.js';
 import { Tutorial } from './ui/tutorial.js';
 import { bindKeyboard } from './ui/keyboard.js';
+import { platform } from './platform.js';
 
 const MAX_QUEUED_MOVES = 3;
 
@@ -21,6 +22,8 @@ export class Game {
     this.levelIndex = 0;
     this.level = null;
     this.moveQueue = [];
+    this.paused = false; // an ad is playing
+    this.adPending = false;
 
     this.stage = new Stage(canvas);
     this.backdrop = new Backdrop(this.stage.scene);
@@ -38,6 +41,7 @@ export class Game {
 
     bindKeyboard(this);
     this.bindUi();
+    this.bindPlatform();
     this.ui.setMuted(sfx.muted);
 
     this.openMenu();
@@ -59,6 +63,19 @@ export class Game {
     ui.onHowTo = () => this.play(0, { tutorial: true });
   }
 
+  bindPlatform() {
+    sfx.setForcedMute('portal', platform.muteAudio);
+    platform.onMuteSetting = (muted) => {
+      sfx.setForcedMute('portal', muted);
+      this.ui.setMuted(sfx.muted);
+    };
+    platform.onAdPause = (on) => {
+      this.paused = on;
+      this.moveQueue = [];
+      sfx.setForcedMute('ad', on);
+    };
+  }
+
   // ---- Flow -------------------------------------------------------------
 
   // First level the player hasn't solved yet (or the last one).
@@ -68,6 +85,7 @@ export class Game {
 
   openMenu() {
     this.state = 'menu';
+    platform.gameplayStop();
     this.tutorial.stop();
     this.ui.hideWin();
     this.stage.setMode('menu');
@@ -92,6 +110,7 @@ export class Game {
     this.world.setMenuMode(false);
     this.loadLevel(index);
     if (tutorial && !this.tutorial.active) this.tutorial.start();
+    platform.gameplayStart();
   }
 
   loadLevel(index, { preview = false } = {}) {
@@ -105,8 +124,14 @@ export class Game {
     if (!preview && this.level.def.tutorial && !Tutorial.done) this.tutorial.start();
   }
 
-  nextLevel() {
-    if (this.levelIndex + 1 < LEVELS.length) this.play(this.levelIndex + 1);
+  // Between levels is the natural break for a midgame ad (the SDK decides
+  // whether one actually shows).
+  async nextLevel() {
+    if (this.adPending || this.levelIndex + 1 >= LEVELS.length) return;
+    this.adPending = true;
+    await platform.midgameAd();
+    this.adPending = false;
+    if (this.state === 'playing') this.play(this.levelIndex + 1);
   }
 
   showLevelSelect() {
@@ -127,6 +152,8 @@ export class Game {
 
   onWin() {
     if (this.tutorial.active) this.tutorial.finish();
+    platform.gameplayStop();
+    platform.happytime();
     const moves = this.level.moves;
     const isBest = progress.complete(this.levelIndex, moves);
     this.ui.showWin({
@@ -143,7 +170,7 @@ export class Game {
 
   // dirName is screen-relative ('up' = away from the camera).
   requestMove(dirName) {
-    if (this.state !== 'playing' || this.level.won) return;
+    if (this.state !== 'playing' || this.paused || this.level.won) return;
     if (this.anim.busy) {
       if (this.moveQueue.length < MAX_QUEUED_MOVES) this.moveQueue.push(dirName);
       return;
@@ -157,7 +184,7 @@ export class Game {
   }
 
   undo() {
-    if (this.state !== 'playing' || this.level.won) return;
+    if (this.state !== 'playing' || this.paused || this.level.won) return;
     this.anim.finishAll();
     this.moveQueue = [];
     if (this.level.undo()) {
@@ -168,13 +195,14 @@ export class Game {
   }
 
   restart() {
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing' || this.paused) return;
     this.anim.clear();
     this.level.reset();
     this.world.syncInstant();
     this.moveQueue = [];
     this.ui.hideWin();
     this.updateHud();
+    platform.gameplayStart(); // "Replay" from the win card
   }
 
   toggleMute() {
