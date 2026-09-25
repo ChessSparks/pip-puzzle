@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Pip</title>
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div class="hud">
+      <div class="panel title-panel">
+        <div class="level-num" id="level-num">Level 1</div>
+        <div class="level-name" id="level-name"></div>
+        <div class="stats">
+          <span>Moves <b id="moves">0</b></span>
+          <span>Plates <b id="plates">0/0</b></span>
+        </div>
+      </div>
+      <div class="panel buttons">
+        <button id="btn-menu" class="icon" title="Menu (Esc)" aria-label="Menu">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+        <button id="btn-mute" class="icon" title="Sound (M)" aria-label="Sound"></button>
+        <button id="btn-help" class="icon" title="How to play" aria-label="How to play">
+          <svg viewBox="0 0 24 24"><path d="M9.2 9a3 3 0 1 1 4.3 2.7c-.9.4-1.5 1.2-1.5 2.1V15" /><circle cx="12" cy="18.6" r="0.6" /></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Big thumb-sized action buttons (bottom-left). -->
+    <div class="actions">
+      <button id="btn-undo" class="action undo" title="Undo (Z)" aria-label="Undo">
+        <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg>
+      </button>
+      <button id="btn-restart" class="action restart" title="Restart (R)" aria-label="Restart">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
+      </button>
+    </div>
+
+    <div class="hint" id="hint"></div>
+    <div class="tutorial hidden" id="tutorial"></div>
+    <div class="controls-help">Arrows / WASD move · Z undo · R restart · drag to rotate view</div>
+
+    <div class="dpad" id="dpad">
+      <button data-dir="up">▲</button>
+      <button data-dir="left">◀</button>
+      <button data-dir="right">▶</button>
+      <button data-dir="down">▼</button>
+    </div>
+
+    <div class="overlay hidden" id="win">
+      <div class="card">
+        <h1>Level Complete!</h1>
+        <div class="stars" id="win-stars"></div>
+        <p id="win-text"></p>
+        <div class="card-buttons">
+          <button id="btn-win-menu">Menu</button>
+          <button id="btn-replay">Replay</button>
+          <button id="btn-next" class="primary">Next Level →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu hidden" id="menu">
+      <div class="menu-main" id="menu-main">
+        <div class="logo">
+          <h1 class="title" aria-label="Pip"><span>P</span><span class="i">ı</span><span>p</span></h1>
+          <p class="subtitle">A little crate-pushing adventure</p>
+        </div>
+        <div class="menu-actions">
+          <button id="btn-play" class="btn-play">
+            <svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+            <span class="play-text"><span id="play-label">Play</span><small id="play-sub"></small></span>
+          </button>
+          <button id="btn-levels" class="btn-levels">
+            <span>Levels</span><span class="star-total" id="star-total"></span>
+          </button>
+          <div class="menu-icons">
+            <button id="btn-sound" class="round" title="Sound" aria-label="Sound"></button>
+            <button id="btn-howto" class="round" title="How to play" aria-label="How to play">
+              <svg viewBox="0 0 24 24"><path d="M9.2 9a3 3 0 1 1 4.3 2.7c-.9.4-1.5 1.2-1.5 2.1V15" /><circle cx="12" cy="18.6" r="0.6" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-panel hidden" id="menu-levels">
+        <h2>Choose a level</h2>
+        <div class="level-grid" id="level-grid"></div>
+        <button id="btn-back" class="btn-back">← Back</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
