@@ -1,6 +1,6 @@
 /* ---------------- Big action buttons (undo / restart) ---------------- */
 .actions {
-  position: fixed; left: 16px; bottom: 16px; z-index: 2;
+  position: fixed; left: calc(16px + var(--safe-l)); bottom: calc(16px + var(--safe-b)); z-index: 2;
   display: flex; gap: 14px;
 }
 button.action {
@@ -16,4 +16,7 @@ button.action.undo:hover { background: linear-gradient(180deg, #ffcc62, #ffb033)
 button.action.restart { background: linear-gradient(180deg, #9277ff, #7254f7); }
 button.action.restart:hover { background: linear-gradient(180deg, #9f87ff, #7f63ff); }
 /* On touch the D-pad is bottom-right; stack these up the left edge. */
-body.touch .actions { flex-direction: column-reverse; bottom: 40px; }
+body.touch .actions { flex-direction: column-reverse; bottom: calc(40px + var(--safe-b)); }
+@media (max-height: 500px) {
+  body.touch .actions { bottom: calc(16px + var(--safe-b)); }
+}

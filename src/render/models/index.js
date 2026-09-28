@@ -5,4 +5,3 @@ export { makeCrate, makeCrateTexture } from './crate.js';
 export { makePlate } from './plate.js';
 export { makeGate } from './gate.js';
 export { makeExit } from './exit.js';
-export { makeGuideArrow } from './guideArrow.js';

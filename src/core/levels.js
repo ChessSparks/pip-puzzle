@@ -1,5 +1,5 @@
 // All levels, grouped into chapters (one file per chapter in ./levels/).
-// Each level: { name, map, par, solution, hint? , tutorial? }.
+// Each level: { name, map, par, solution, hint? }.
 // `par` is the move count for 3 stars (a little above the optimum).
 // `solution` is a known shortest solution (U/D/L/R); `npm run solve` replays it
 // and `npm run playtest` plays it in the browser. Search for a new one with

@@ -9,8 +9,8 @@ import { Stage } from './render/Stage.js';
 import { World } from './render/World.js';
 import { Backdrop } from './render/Backdrop.js';
 import { sfx, playMoveSounds } from './audio/sfx.js';
-import { Tutorial } from './ui/tutorial.js';
 import { bindKeyboard } from './ui/keyboard.js';
+import { freeAreas } from './ui/ui.js';
 import { platform } from './platform.js';
 
 const MAX_QUEUED_MOVES = 3;
@@ -30,14 +30,9 @@ export class Game {
     this.anim = new Animator();
     this.world = new World(this.stage.scene, this.anim);
     this.clock = new THREE.Clock();
-
-    this.tutorial = new Tutorial(document.getElementById('tutorial'), {
-      onStepChange: (id) => {
-        this.world.setGuides(id === 'goal');
-        this.ui.setHintVisible(!id);
-      },
-    });
-    this.stage.onRotate = (delta) => this.tutorial.onRotate(delta);
+    this.stage.freeAreas = freeAreas;
+    // Touch <-> mouse shows/hides the D-pad, which changes the free space.
+    window.addEventListener('inputmodechange', () => this.level && this.stage.frame(this.level, { keepView: true }));
 
     bindKeyboard(this);
     this.bindUi();
@@ -55,12 +50,10 @@ export class Game {
     ui.onRestart = () => this.restart();
     ui.onNext = () => this.nextLevel();
     ui.onMute = () => this.toggleMute();
-    ui.onHelp = () => this.tutorial.start();
     ui.onMenu = () => this.openMenu();
     ui.onPlay = () => this.play(this.continueIndex);
     ui.onLevels = () => this.showLevelSelect();
     ui.onPlayLevel = (i) => this.play(i);
-    ui.onHowTo = () => this.play(0, { tutorial: true });
   }
 
   bindPlatform() {
@@ -86,42 +79,40 @@ export class Game {
   openMenu() {
     this.state = 'menu';
     platform.gameplayStop();
-    this.tutorial.stop();
     this.ui.hideWin();
-    this.stage.setMode('menu');
-    // Show the level the player would continue on, slowly turning behind the menu.
-    if (!this.level || this.level.won || this.levelIndex !== this.continueIndex) {
-      this.loadLevel(this.continueIndex, { preview: true });
-    }
-    this.world.setMenuMode(true, this.stage.camera.position);
+    // Menu first, so the level is framed around its actual layout.
     this.ui.showMenu({
       continueIndex: this.continueIndex,
       anyCompleted: progress.best(0) !== null,
       stars: this.totalStars(),
       maxStars: LEVELS.length * 3,
     });
+    this.stage.setMode('menu');
+    // Show the level the player would continue on, slowly turning behind the menu.
+    if (!this.level || this.level.won || this.levelIndex !== this.continueIndex) {
+      this.loadLevel(this.continueIndex);
+    }
+    this.world.setMenuMode(true, this.stage.camera.position);
   }
 
-  play(index, { tutorial = false } = {}) {
+  play(index) {
     this.state = 'playing';
     this.ui.hideMenu();
     this.ui.hideWin();
     this.stage.setMode('play');
     this.world.setMenuMode(false);
     this.loadLevel(index);
-    if (tutorial && !this.tutorial.active) this.tutorial.start();
     platform.gameplayStart();
   }
 
-  loadLevel(index, { preview = false } = {}) {
+  loadLevel(index) {
     this.levelIndex = index;
     this.level = new Level(LEVELS[index]);
     this.world.build(this.level);
     this.moveQueue = [];
-    this.stage.frame(this.level);
     this.ui.showLevel(this.levelIndex, CHAPTERS[this.level.def.chapter].name, this.level);
+    this.stage.frame(this.level); // after the HUD text, which sets the HUD's size
     this.updateHud();
-    if (!preview && this.level.def.tutorial && !Tutorial.done) this.tutorial.start();
   }
 
   // Between levels is the natural break for a midgame ad (the SDK decides
@@ -151,7 +142,6 @@ export class Game {
   }
 
   onWin() {
-    if (this.tutorial.active) this.tutorial.finish();
     platform.gameplayStop();
     platform.happytime();
     const moves = this.level.moves;
@@ -177,7 +167,6 @@ export class Game {
     }
     const ev = this.level.move(this.stage.toGridDir(dirName));
     if (!ev) return;
-    this.tutorial.onInput(dirName);
     this.world.applyEvent(ev, () => this.onWin());
     playMoveSounds(ev, this.level);
     this.updateHud();

@@ -1,5 +1,4 @@
 /* Entry stylesheet: one file per area of the UI. */
 @import './styles/base.css';
-@import './styles/tutorial.css';
 @import './styles/menu.css';
 @import './styles/actions.css';

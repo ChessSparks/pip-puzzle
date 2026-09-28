@@ -9,8 +9,8 @@ const starRow = (n, total = 3) =>
 
 export function createUI() {
   const ui = {
-    onMove: null, onUndo: null, onRestart: null, onNext: null, onMute: null, onHelp: null,
-    onMenu: null, onPlay: null, onPlayLevel: null, onHowTo: null,
+    onMove: null, onUndo: null, onRestart: null, onNext: null, onMute: null,
+    onMenu: null, onPlay: null, onPlayLevel: null,
 
     showLevel(index, chapterName, level) {
       $('level-num').textContent = `${chapterName} · Level ${index + 1}`;
@@ -40,10 +40,6 @@ export function createUI() {
 
     hideWin() {
       $('win').classList.add('hidden');
-    },
-
-    setHintVisible(visible) {
-      $('hint').classList.toggle('suppressed', !visible);
     },
 
     setMuted(muted) {
@@ -110,14 +106,12 @@ export function createUI() {
   $('btn-undo').onclick = () => ui.onUndo?.();
   $('btn-restart').onclick = () => ui.onRestart?.();
   $('btn-mute').onclick = () => ui.onMute?.();
-  $('btn-help').onclick = () => ui.onHelp?.();
   $('btn-next').onclick = () => ui.onNext?.();
   $('btn-replay').onclick = () => ui.onRestart?.();
   $('btn-win-menu').onclick = () => ui.onMenu?.();
   $('btn-play').onclick = () => ui.onPlay?.();
   $('btn-levels').onclick = () => ui.onLevels?.();
   $('btn-back').onclick = () => ui.showMenuPanel('main');
-  $('btn-howto').onclick = () => ui.onHowTo?.();
   $('btn-sound').onclick = () => ui.onMute?.();
   for (const b of document.querySelectorAll('#dpad button')) {
     b.onpointerdown = (e) => {
@@ -128,7 +122,8 @@ export function createUI() {
   // Buttons shouldn't keep focus, or Space/Enter would re-trigger them.
   document.addEventListener('mouseup', (e) => e.target.closest?.('button')?.blur());
   trackInputMode();
-  // Expose the HUD's bottom edge so the touch tutorial card can sit below it.
+  trackUiScale();
+  // Expose the HUD's bottom edge so the touch level hint can sit below it.
   const hud = document.querySelector('.hud');
   new ResizeObserver(() => {
     document.documentElement.style.setProperty('--hud-h', `${hud.getBoundingClientRect().bottom}px`);
@@ -136,8 +131,59 @@ export function createUI() {
   return ui;
 }
 
+// --ui scales the HUD, controls and menus with the screen: bigger on large
+// monitors, smaller on short (landscape phone) screens. Registered before the
+// Stage's resize listener so framing measures the rescaled controls.
+function trackUiScale() {
+  const update = () => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const big = Math.min(w / 1440, h / 900);
+    const s = big > 1 ? Math.min(big, 2) : Math.max(0.62, Math.min(1, h / 520));
+    document.documentElement.style.setProperty('--ui', s.toFixed(3));
+  };
+  window.addEventListener('resize', update);
+  update();
+}
+
+const rectOf = (el) => {
+  const r = el?.getBoundingClientRect();
+  return r && r.width && r.height ? r : null;
+};
+
+// Screen rectangles (px) the level may be framed into, avoiding the UI.
+// Stage picks whichever candidate shows the level biggest. null = use defaults.
+export function freeAreas(mode) {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const pad = 12;
+  if (mode === 'menu') {
+    const main = rectOf($('menu-main'));
+    if (!main) return null;
+    if (matchMedia('(max-aspect-ratio: 4/5)').matches) {
+      const logo = rectOf(document.querySelector('.logo'));
+      const actions = rectOf(document.querySelector('.menu-actions'));
+      if (!logo || !actions) return null;
+      return [{ left: pad, right: w - pad, top: logo.bottom + pad, bottom: actions.top - pad }];
+    }
+    return [{ left: main.right + pad, right: w - pad, top: pad, bottom: h - pad }];
+  }
+  const hud = rectOf(document.querySelector('.hud'));
+  const top = (hud ? hud.bottom : 0) + pad;
+  const controls = [rectOf($('dpad')), rectOf(document.querySelector('.actions'))].filter(Boolean);
+  const onRight = (c) => c.left + c.width / 2 > w / 2;
+  const leftEdge = Math.max(0, ...controls.filter((c) => !onRight(c)).map((c) => c.right));
+  const rightEdge = Math.min(w, ...controls.filter(onRight).map((c) => c.left));
+  return [
+    // Between the HUD and the bottom controls, full width...
+    { left: pad, right: w - pad, top, bottom: Math.min(h, ...controls.map((c) => c.top)) - pad },
+    // ...or between the left and right controls, full height.
+    { left: leftEdge + pad, right: rightEdge - pad, top, bottom: h - pad },
+  ];
+}
+
 // Toggle body.touch based on how the player is actually playing, so the
-// D-pad and tutorial copy match. Fires an 'inputmodechange' event on switch.
+// D-pad shows only for touch. Fires an 'inputmodechange' event on switch.
 function trackInputMode() {
   const set = (touch) => {
     if (document.body.classList.contains('touch') === touch) return;

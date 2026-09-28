@@ -42,14 +42,13 @@ src/
     terrain.js       instanced grass/ice/earth/water/walls
     effects.js       splash
     Backdrop.js      clouds + floating islets
-    models/          one factory per model (player, crate, plate, gate, exit, guideArrow)
+    models/          one factory per model (player, crate, plate, gate, exit)
     colors.js, util.js
   ui/
     ui.js            HUD, menu, level select, win card (DOM only; Game sets on* callbacks)
-    tutorial.js      level-1 tutorial (desktop card / touch bar + animated finger)
     keyboard.js      key bindings -> Game methods
   audio/sfx.js       WebAudio synth sounds + playMoveSounds(ev)
-  style.css          imports styles/{base,tutorial,menu,actions}.css
+  style.css          imports styles/{base,menu,actions}.css
 tools/               solve.js, playtest.mjs, generate.mjs, pick-levels.mjs
 ```
 
@@ -93,3 +92,6 @@ player can't push two crates in a row.
   ads pause input and mute audio. On localhost the SDK runs in `local` mode with fake ads.
 - UI must work at phone width: touch mode (`body.touch`) shows the D-pad and stacks the
   undo/restart buttons; portrait views rotate wide levels so the long axis runs vertically.
+- Screen sizes: `--ui` (set in `ui.js`) zooms the HUD/controls/menus (bigger on large screens,
+  smaller on short ones). The camera frames the level into the space the UI leaves free,
+  measured by `freeAreas()` in `ui.js` — new on-screen controls should be added there.

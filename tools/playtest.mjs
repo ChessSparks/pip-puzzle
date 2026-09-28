@@ -31,10 +31,9 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 await page.setViewport({ width: 1280, height: 800 });
 await page.goto(url, { waitUntil: 'load' });
-// Unlock everything and skip the tutorial so each level can be started directly.
+// Unlock everything so each level can be started directly.
 await page.evaluate((n) => {
   localStorage.setItem('crateKeeper.progress', JSON.stringify({ unlocked: n, best: {} }));
-  localStorage.setItem('crateKeeper.tutorialDone', '1');
 }, LEVELS.length);
 await page.reload({ waitUntil: 'load' });
 await page.waitForFunction(() => window.game?.state === 'menu');

@@ -2,7 +2,6 @@
 export const FIRST_STEPS = [
   {
     name: 'The Gatehouse',
-    tutorial: true,
     par: 42,
     hint: 'Push both crates onto the glowing plates to open the gate.',
     map: [

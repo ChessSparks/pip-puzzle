@@ -3,9 +3,7 @@ body.in-menu .hud,
 body.in-menu .actions,
 body.in-menu .hint,
 body.in-menu .dpad,
-body.in-menu .controls-help,
-body.in-menu .tutorial,
-body.in-menu .tut-hand { display: none !important; }
+body.in-menu .controls-help { display: none !important; }
 
 .menu {
   position: fixed; inset: 0; pointer-events: none;

@@ -65,7 +65,6 @@ async function open(width, height, scale = 1) {
   await page.setViewport({ width, height, deviceScaleFactor: scale });
   await page.goto(url, { waitUntil: 'load' });
   await page.evaluate(() => {
-    localStorage.setItem('crateKeeper.tutorialDone', '1');
     localStorage.setItem('crateKeeper.muted', '1');
   });
   await page.reload({ waitUntil: 'load' });

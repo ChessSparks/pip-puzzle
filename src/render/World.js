@@ -8,7 +8,7 @@ import { disposeTree } from './util.js';
 import { buildTerrain, WATER_TOP } from './terrain.js';
 import { splash } from './effects.js';
 import {
-  makePlayer, makeCrate, makeCrateTexture, makePlate, makeGate, makeExit, makeGuideArrow,
+  makePlayer, makeCrate, makeCrateTexture, makePlate, makeGate, makeExit,
 } from './models/index.js';
 
 const FACING_ANGLE = { down: 0, right: Math.PI / 2, up: Math.PI, left: -Math.PI / 2 };
@@ -71,27 +71,12 @@ export class World {
     this.player = makePlayer();
     this.root.add(this.player.group);
 
-    // Tutorial guide arrows above each plate and the exit (hidden by default).
-    this.guidesOn = false;
-    this.guides = [...level.plates, ...(level.exit ? [level.exit] : [])].map((cell, i) => {
-      const isExit = i >= level.plates.length;
-      const arrow = makeGuideArrow(isExit ? COLORS.portal : COLORS.plateOn);
-      arrow.position.copy(this.pos(cell.x, cell.z, isExit ? 2.1 : 1.45));
-      arrow.scale.setScalar(0);
-      this.root.add(arrow);
-      return { arrow, cell, isExit, baseY: arrow.position.y, s: 0 };
-    });
-
     this.syncInstant();
   }
 
   // Grid cell -> world position (level centred on the origin).
   pos(x, z, y = 0) {
     return new THREE.Vector3(x - (this.level.width - 1) / 2, y, z - (this.level.height - 1) / 2);
-  }
-
-  setGuides(on) {
-    this.guidesOn = on;
   }
 
   // Menu mode: Pip idles happily and turns to watch `lookAt` (the camera).
@@ -278,14 +263,5 @@ export class World {
 
     if (this.exit) this.exit.update(dt, time);
     if (this.water) this.water.position.y = Math.sin(time * 1.6) * 0.015;
-
-    for (const g of this.guides) {
-      const wanted = this.guidesOn && (g.isExit ? lvl.gateOpen : !lvl.isPlatePressed(g.cell));
-      g.s = smooth(g.s, wanted ? 1 : 0, 8);
-      g.arrow.visible = g.s > 0.01;
-      g.arrow.scale.setScalar(g.s);
-      g.arrow.position.y = g.baseY + Math.sin(time * 4) * 0.12;
-      g.arrow.rotation.y = time * 1.5;
-    }
   }
 }

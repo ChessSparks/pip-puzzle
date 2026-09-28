@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { DIRS } from '../core/Level.js';
 
-// Screen regions (in NDC, -1..1) the level may occupy, per mode and shape.
-// Playing on a portrait phone it sits between the HUD and the D-pad; in the
-// menu it sits beside (desktop) or between the logo and buttons (portrait).
+// Fallback screen regions (in NDC, -1..1) the level may occupy, per mode and
+// shape, used when `freeAreas` gives nothing. Normally the UI measures the
+// space left free by the HUD, controls and menu (see Stage.freeAreas).
 const AREAS = {
   play: {
     landscape: { xMin: -0.62, xMax: 0.62, yMin: -0.6, yMax: 0.6 },
@@ -37,14 +37,8 @@ export class Stage {
 
     this.mode = 'menu';
     this.level = null;
-    this.onRotate = null; // (deltaAzimuth) => void, fired as the view turns
-    this.lastAzimuth = 0;
-    this.controls.addEventListener('change', () => {
-      const az = this.controls.getAzimuthalAngle();
-      const d = az - this.lastAzimuth;
-      this.lastAzimuth = az;
-      this.onRotate?.(Math.atan2(Math.sin(d), Math.cos(d)));
-    });
+    // (mode) => [{ left, top, right, bottom }] in px, or null. Set by Game.
+    this.freeAreas = null;
 
     this.setupLights();
     window.addEventListener('resize', () => this.resize());
@@ -103,37 +97,51 @@ export class Stage {
       for (const y of [-0.6, 1.2])
         for (const z of [-hz, hz]) corners.push(new THREE.Vector3(x, y, z));
 
-    const area = AREAS[menu ? 'menu' : 'play'][this.portrait ? 'portrait' : 'landscape'];
-    const maxX = (area.xMax - area.xMin) / 2;
-    const maxY = (area.yMax - area.yMin) / 2;
-    const centerX = (area.xMax + area.xMin) / 2;
-    const centerY = (area.yMax + area.yMin) / 2;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const toNdc = (r) => ({ xMin: (r.left / w) * 2 - 1, xMax: (r.right / w) * 2 - 1, yMin: 1 - (r.bottom / h) * 2, yMax: 1 - (r.top / h) * 2 });
+    let areas = (this.freeAreas?.(this.mode) ?? [])
+      .filter((r) => r.right - r.left > 60 && r.bottom - r.top > 60)
+      .map(toNdc);
+    if (!areas.length) areas = [AREAS[menu ? 'menu' : 'play'][this.portrait ? 'portrait' : 'landscape']];
 
-    // Binary-search the closest distance at which every corner stays inside.
+    // Binary-search the closest distance at which every corner stays inside
+    // an area; use whichever area lets the level be biggest.
     this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     const p = new THREE.Vector3();
-    const fits = (dist) => {
-      this.camera.position.copy(target).addScaledVector(dir, dist);
-      this.camera.lookAt(target);
-      this.camera.updateMatrixWorld();
-      return corners.every((c) => {
-        p.copy(c).project(this.camera);
-        return Math.abs(p.x) <= maxX && Math.abs(p.y) <= maxY;
-      });
+    const fitDistance = (maxX, maxY) => {
+      const fits = (dist) => {
+        this.camera.position.copy(target).addScaledVector(dir, dist);
+        this.camera.lookAt(target);
+        this.camera.updateMatrixWorld();
+        return corners.every((c) => {
+          p.copy(c).project(this.camera);
+          return Math.abs(p.x) <= maxX && Math.abs(p.y) <= maxY;
+        });
+      };
+      let lo = 2;
+      let hi = 200;
+      for (let i = 0; i < 24; i++) {
+        const mid = (lo + hi) / 2;
+        if (fits(mid)) hi = mid;
+        else lo = mid;
+      }
+      return hi;
     };
-    let lo = 2;
-    let hi = 200;
-    for (let i = 0; i < 24; i++) {
-      const mid = (lo + hi) / 2;
-      if (fits(mid)) hi = mid;
-      else lo = mid;
+    let dist = Infinity;
+    let centerX = 0;
+    let centerY = 0;
+    for (const a of areas) {
+      const d = fitDistance((a.xMax - a.xMin) / 2, (a.yMax - a.yMin) / 2);
+      if (d < dist) {
+        dist = d;
+        centerX = (a.xMax + a.xMin) / 2;
+        centerY = (a.yMax + a.yMin) / 2;
+      }
     }
-    const dist = hi;
 
     // Shift the rendered image so the level is centred in the allowed region.
-    const w = window.innerWidth;
-    const h = window.innerHeight;
     if (centerX || centerY) this.camera.setViewOffset(w, h, (-centerX * w) / 2, (centerY * h) / 2, w, h);
     this.camera.updateProjectionMatrix();
 
@@ -142,7 +150,6 @@ export class Stage {
     this.controls.minDistance = dist * 0.5;
     this.controls.maxDistance = dist * 1.8;
     this.controls.update();
-    this.lastAzimuth = this.controls.getAzimuthalAngle();
 
     const cam = this.sun.shadow.camera;
     const sr = Math.max(width, height) * 0.75 + 1;
