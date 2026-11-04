@@ -10,10 +10,10 @@ const starRow = (n, total = 3) =>
 export function createUI() {
   const ui = {
     onMove: null, onUndo: null, onRestart: null, onNext: null, onMute: null,
-    onMenu: null, onPlay: null, onPlayLevel: null,
+    onMenu: null, onPlay: null, onPlayLevel: null, onPlayWorld: null, onQuality: null, onHint: null, onMusic: null,
 
-    showLevel(index, chapterName, level) {
-      $('level-num').textContent = `${chapterName} · Level ${index + 1}`;
+    showLevel(label, level) {
+      $('level-num').textContent = label;
       $('level-name').textContent = level.name;
       $('plates').parentElement.style.display = level.plates.length ? '' : 'none';
       const hint = $('hint');
@@ -23,16 +23,72 @@ export function createUI() {
       ui._hintTimer = setTimeout(() => hint.classList.add('faded'), 9000);
     },
 
+    // Sky gradient stops (top-centre -> edge) for the current chapter.
+    setSky([a, b, c]) {
+      const root = document.documentElement.style;
+      root.setProperty('--sky-a', a);
+      root.setProperty('--sky-b', b);
+      root.setProperty('--sky-c', c);
+    },
+
+    // "Oh no" moment: a speech balloon over Pip and a wiggling undo button.
+    setStuck(on) {
+      $('btn-undo').classList.toggle('nudge', on);
+    },
+
+    // Show `text` in Pip's speech balloon (it pops in again when the text
+    // changes), or hide the balloon (null).
+    say(text) {
+      const b = $('bubble');
+      const inner = b.firstElementChild;
+      if (!text) {
+        b.classList.add('hidden');
+        return;
+      }
+      if (inner.textContent !== text || b.classList.contains('hidden')) {
+        inner.textContent = text;
+        b.classList.add('hidden');
+        void b.offsetWidth; // restart the pop-in animation
+        b.classList.remove('hidden');
+      }
+    },
+
+    // Put the balloon's tail at screen point { x, y } (px), or hide it (null).
+    // Kept inside the window (the balloon slides; its tail stays centred).
+    placeBubble(point) {
+      const b = $('bubble');
+      b.style.visibility = point ? '' : 'hidden';
+      if (!point) return;
+      const half = b.firstElementChild.getBoundingClientRect().width / 2;
+      const x = Math.min(Math.max(point.x, half + 8), window.innerWidth - half - 8);
+      const y = Math.max(point.y, b.firstElementChild.getBoundingClientRect().height + 20);
+      b.style.transform = `translate(${x}px, ${y}px)`;
+    },
+
+    // Centre of the undo button in px (for Pip's nervous glances), or null.
+    undoButtonCenter() {
+      const r = $('btn-undo').getBoundingClientRect();
+      return r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
+    },
+
     setStats(moves, pressed, total) {
       $('moves').textContent = moves;
       $('plates').textContent = `${pressed}/${total}`;
     },
 
-    showWin({ moves, stars, best, isBest, par, hasNext }) {
+    showWin({ moves, stars, best, isBest, par, hasNext, spark, finale, title, worldUnlocked }) {
+      $('win-title').textContent = finale ? finale.title : title ?? 'Level Complete!';
       $('win-stars').innerHTML = starRow(stars);
-      const lines = [`Solved in ${moves} moves · ${isBest ? 'new best!' : `best ${best}`}`];
+      const lines = [];
+      if (finale) lines.push(`<span class="story-line">${finale.text}</span>`);
+      if (spark) {
+        lines.push(`<span class="spark-line">✦ Spark found! ${spark.count}/${spark.total}</span>`);
+        lines.push(`<span class="story-line">“${spark.text}”</span>`);
+      }
+      lines.push(`Solved in ${moves} moves · ${isBest ? 'new best!' : `best ${best}`}`);
+      if (worldUnlocked) lines.push('<span class="spark-line">🪐 Star World unlocked! Find it in Levels.</span>');
       if (stars < 3) lines.push(`Finish in ${par} moves or fewer for 3 stars.`);
-      if (!hasNext) lines.push('More levels coming soon!');
+      if (!hasNext && !finale && !title) lines.push('More levels coming soon!');
       $('win-text').innerHTML = lines.join('<br>');
       $('btn-next').style.display = hasNext ? '' : 'none';
       $('win').classList.remove('hidden');
@@ -42,6 +98,18 @@ export function createUI() {
       $('win').classList.add('hidden');
     },
 
+    setMusic(on) {
+      const b = $('btn-music');
+      b.classList.toggle('off', !on);
+      b.title = on ? 'Music: on' : 'Music: off';
+    },
+
+    setQuality(q) {
+      const b = $('btn-quality');
+      b.classList.toggle('off', q === 'low');
+      b.title = q === 'low' ? 'Effects: Low (tap for High)' : 'Effects: High (tap for Low)';
+    },
+
     setMuted(muted) {
       $('btn-mute').innerHTML = muted ? SOUND_OFF : SOUND_ON;
       $('btn-sound').innerHTML = muted ? SOUND_OFF : SOUND_ON;
@@ -49,10 +117,11 @@ export function createUI() {
     },
 
     // ---- Main menu ----
-    showMenu({ continueIndex, anyCompleted, stars, maxStars }) {
+    showMenu({ continueIndex, anyCompleted, stars, maxStars, sparks, maxSparks }) {
       $('play-label').textContent = anyCompleted ? 'Continue' : 'Play';
       $('play-sub').textContent = anyCompleted ? `Level ${continueIndex + 1}` : '';
-      $('star-total').innerHTML = `<span class="star on">★</span> ${stars}/${maxStars}`;
+      $('star-total').innerHTML = `<span class="star on">★</span> ${stars}/${maxStars}`
+        + ` <span class="spark-count" title="Sparks for the Great Portal">✦ ${sparks}/${maxSparks}</span>`;
       ui.showMenuPanel('main');
       document.body.classList.add('in-menu');
       $('menu').classList.remove('hidden');
@@ -88,14 +157,22 @@ export function createUI() {
               </button>`;
             })
             .join('');
+          const w = c.world;
+          const worldTile = w.open
+            ? `<button class="level-tile star-world" data-world="${ci}" title="Star World: ${w.name}${w.best !== null ? ` · best ${w.best}` : ''}">
+                <span class="lt-num">🪐</span><span class="lt-stars">${starRow(w.stars)}</span></button>`
+            : `<button class="level-tile star-world locked" disabled title="Star World: get 3 stars on every level in this chapter">
+                <span class="lt-num">🪐</span><span class="lt-stars">${got}/${c.levels.length * 3}</span></button>`;
           return `<section class="chapter">
-            <div class="chapter-head"><span>${ci + 1} · ${c.name}</span><span class="ch-stars"><span class="star on">★</span> ${got}/${c.levels.length * 3}</span></div>
-            <div class="level-tiles">${tiles}</div>
+            <div class="chapter-head"><span>${ci + 1} · ${c.name}${c.spark ? ' <span class="spark-count" title="Spark found">✦</span>' : ''}</span><span class="ch-stars"><span class="star on">★</span> ${got}/${c.levels.length * 3}</span></div>
+            <div class="level-tiles">${tiles}${worldTile}</div>
           </section>`;
         })
         .join('');
       for (const b of grid.querySelectorAll('.level-tile:not(.locked)')) {
-        b.onclick = () => ui.onPlayLevel?.(Number(b.dataset.index));
+        b.onclick = () => (b.dataset.world !== undefined
+          ? ui.onPlayWorld?.(Number(b.dataset.world))
+          : ui.onPlayLevel?.(Number(b.dataset.index)));
       }
       ui.showMenuPanel('levels');
       grid.querySelector('.level-tile.current')?.closest('.chapter')?.scrollIntoView({ block: 'nearest' });
@@ -113,6 +190,9 @@ export function createUI() {
   $('btn-levels').onclick = () => ui.onLevels?.();
   $('btn-back').onclick = () => ui.showMenuPanel('main');
   $('btn-sound').onclick = () => ui.onMute?.();
+  $('btn-quality').onclick = () => ui.onQuality?.();
+  $('btn-hint').onclick = () => ui.onHint?.();
+  $('btn-music').onclick = () => ui.onMusic?.();
   for (const b of document.querySelectorAll('#dpad button')) {
     b.onpointerdown = (e) => {
       e.preventDefault();

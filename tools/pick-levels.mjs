@@ -47,9 +47,10 @@ for (const f of files) {
 pool.sort((a, b) => a.score - b.score);
 if (pool.length < count) throw new Error(`only ${pool.length} usable candidates`);
 
-// Evenly spaced picks from the 35th percentile up to the hardest.
+// Evenly spaced picks from the 35th percentile up to the hardest (starting
+// lower when the pool is small, so no candidate is picked twice).
 const picks = [];
-const lo = Math.floor(pool.length * 0.35);
+const lo = Math.min(Math.floor(pool.length * 0.35), pool.length - count);
 for (let i = 0; i < count; i++) {
   const idx = Math.round(lo + ((pool.length - 1 - lo) * i) / Math.max(1, count - 1));
   picks.push(pool[Math.min(idx, pool.length - 1)]);

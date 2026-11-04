@@ -3,7 +3,10 @@
 A 3D crate-pushing puzzle game built with three.js. Help Pip, a little orange
 robot, push crates onto pressure plates to open the gate and reach the portal.
 
-- 58 levels in 6 chapters: plates, water (crates become bridges) and ice (everything slides)
+- 98 levels in 10 chapters: plates, water (crates become bridges), ice (everything slides),
+  portal pads, crumbling floor, one-way arrows and switch-flipped spikes
+- Every chapter has its own island scenery: spring meadow, blossom, river, snow, thaw,
+  sunset summit, twilight portals, desert canyon, autumn wolds and a volcanic forge
 - Undo, restart, stars and saved progress
 - Works on desktop (keyboard + mouse) and mobile (touch D-pad, drag to rotate)
 
@@ -16,12 +19,8 @@ npm run dev
 
 ## Controls
 
-| Action | Desktop | Mobile |
-|---|---|---|
-| Move | Arrow keys / WASD | On-screen arrows |
-| Rotate view | Drag | Drag |
-| Undo / Restart | Z / R | Big buttons, bottom-left |
-| Menu | Esc | ☰ |
+
+
 
 ## Tools
 

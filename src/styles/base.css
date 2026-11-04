@@ -1,16 +1,26 @@
 /* Base: page, HUD panels, buttons, hint, D-pad, win overlay. */
 * { box-sizing: border-box; }
 
+/* Sky colours, set per chapter theme by ui.setSky(); registered so they fade. */
+@property --sky-a { syntax: '<color>'; inherits: true; initial-value: #bfe6ff; }
+@property --sky-b { syntax: '<color>'; inherits: true; initial-value: #8ec5f0; }
+@property --sky-c { syntax: '<color>'; inherits: true; initial-value: #5d8fd6; }
+
 html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
   font-family: 'Fredoka', 'Segoe UI', system-ui, sans-serif;
   color: #1d2340;
-  background: radial-gradient(ellipse at 50% 30%, #bfe6ff 0%, #8ec5f0 45%, #5d8fd6 100%);
+  background: radial-gradient(ellipse at 50% 30%, var(--sky-a) 0%, var(--sky-b) 45%, var(--sky-c) 100%);
 }
+/* Fade on the root only: body inherits the fading colours as they change. */
+html { transition: --sky-a 1.2s, --sky-b 1.2s, --sky-c 1.2s; }
 
 #scene { display: block; width: 100vw; height: 100vh; touch-action: none; }
+
+/* No text selection, long-press callouts or tap flashes (mobile portals). */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 
 /* --ui (set in ui.js) grows the UI on big screens and shrinks it on short ones. */
 .hud, .actions, .dpad, .hint, .controls-help, .card, .menu-main, .menu-panel { zoom: var(--ui, 1); }
@@ -67,6 +77,32 @@ button.primary:hover { background: #6a4af0; }
   transition: opacity 0.6s;
 }
 .hint.faded { opacity: 0; pointer-events: none; }
+
+/* Story lines on the win card. */
+.spark-line { color: #ff8a1f; font-weight: 700; font-size: 1.1em; }
+.story-line { font-style: italic; color: #4a4f6e; }
+
+/* Speech balloon over Pip. The outer box is moved to Pip's head each frame
+   (its tail sits on that point); the inner one is zoomed with the UI. */
+.bubble { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 2; }
+.bubble.hidden { display: none; }
+.bubble-inner {
+  zoom: var(--ui, 1);
+  position: absolute; left: 0; bottom: 10px; transform: translateX(-50%);
+  width: max-content; max-width: 250px; padding: 8px 16px; border-radius: 18px;
+  background: #fff; color: #1d2340; font-size: 17px; font-weight: 700;
+  text-align: center; line-height: 1.25;
+  box-shadow: 0 4px 0 #d9dcef, 0 8px 18px rgba(20, 30, 70, 0.22);
+  transform-origin: 50% 100%;
+  animation: bubble-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both, bubble-bob 1.8s ease-in-out 0.35s infinite;
+}
+/* Tail pointing down at Pip. */
+.bubble-inner::after {
+  content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -9px;
+  border: 9px solid transparent; border-bottom: 0; border-top-color: #fff;
+}
+@keyframes bubble-pop { from { transform: translateX(-50%) scale(0.2); opacity: 0; } }
+@keyframes bubble-bob { 50% { transform: translateX(-50%) translateY(-4px) rotate(-2deg); } }
 /* On touch the D-pad owns the bottom, so the level hint moves under the HUD. */
 body.touch .hint {
   bottom: auto; top: calc(var(--hud-h, 120px) / var(--ui, 1) + 12px);

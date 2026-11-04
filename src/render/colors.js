@@ -10,7 +10,7 @@ export const COLORS = {
   gate: 0x5a4a6e,
   lightOff: 0x5b2030,
   lightOn: 0x4ff0ff,
-  portal: 0xb56cff,
+  portal: 0xff8a2a, // exit portal + gate glow (orange)
   player: 0xff8a3d,
   visor: 0x1c2233,
   eye: 0x7ff6ff,

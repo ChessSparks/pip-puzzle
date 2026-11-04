@@ -1,5 +1,5 @@
 // Key/value save storage. Defaults to localStorage; the platform layer can
-// swap in another backend (e.g. CrazyGames' cloud-synced SDK.data) before the
+// swap in another backend (e.g. a portal's cloud saves) before the
 // game reads anything. Every access is guarded: blocked storage or Node just
 // means nothing is remembered.
 let backend = null;

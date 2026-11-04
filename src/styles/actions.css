@@ -15,8 +15,20 @@ button.action.undo { --edge: #d68600; background: linear-gradient(180deg, #ffc24
 button.action.undo:hover { background: linear-gradient(180deg, #ffcc62, #ffb033); }
 button.action.restart { background: linear-gradient(180deg, #9277ff, #7254f7); }
 button.action.restart:hover { background: linear-gradient(180deg, #9f87ff, #7f63ff); }
+button.action.ask { --edge: #1f8f84; background: linear-gradient(180deg, #5fe0d2, #2bb3a6); }
+button.action.ask:hover { background: linear-gradient(180deg, #74e8db, #36bfb2); }
 /* On touch the D-pad is bottom-right; stack these up the left edge. */
 body.touch .actions { flex-direction: column-reverse; bottom: calc(40px + var(--safe-b)); }
 @media (max-height: 500px) {
   body.touch .actions { bottom: calc(16px + var(--safe-b)); }
+}
+
+/* "Oh no" moment: the undo button wiggles and glows until the player undoes. */
+button.action.undo.nudge { animation: nudge 1.6s ease-in-out infinite; }
+@keyframes nudge {
+  0%, 55%, 100% { transform: rotate(0) scale(1); box-shadow: 0 6px 0 var(--edge), 0 0 0 0 rgba(255, 194, 71, 0.7); }
+  62% { transform: rotate(-14deg) scale(1.08); }
+  70% { transform: rotate(12deg) scale(1.08); }
+  78% { transform: rotate(-8deg) scale(1.05); box-shadow: 0 6px 0 var(--edge), 0 0 0 14px rgba(255, 194, 71, 0); }
+  86% { transform: rotate(4deg) scale(1.02); }
 }

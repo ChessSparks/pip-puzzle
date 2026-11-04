@@ -1,22 +1,24 @@
-// Saved progress (unlocked levels, best move counts) via core/storage.js
-// (localStorage, or CrazyGames cloud saves). Loaded on first use so the
-// platform can pick the storage backend first.
+// Saved progress (unlocked levels, best move counts) via core/storage.js.
+// Loaded on first use.
 import { storage } from './storage.js';
 
 const KEY = 'crateKeeper.progress';
 
-function load() {
+// Parses the saved JSON text; anything invalid gives null.
+function parse(text) {
   try {
-    const data = JSON.parse(storage.get(KEY));
-    if (data && typeof data === 'object') return { unlocked: data.unlocked ?? 1, best: data.best ?? {} };
+    const data = JSON.parse(text);
+    if (data && typeof data === 'object') {
+      return { unlocked: Number(data.unlocked) || 1, best: data.best ?? {}, worlds: data.worlds ?? {} };
+    }
   } catch {
     /* fall through */
   }
-  return { unlocked: 1, best: {} };
+  return null;
 }
 
 let loaded = null;
-const state = () => (loaded ??= load());
+const state = () => (loaded ??= parse(storage.get(KEY)) ?? { unlocked: 1, best: {}, worlds: {} });
 
 function save() {
   storage.set(KEY, JSON.stringify(state()));
@@ -29,6 +31,18 @@ export const progress = {
   },
   best(index) {
     return state().best[index] ?? null;
+  },
+  // Star Worlds (by chapter): best moves, or null.
+  worldBest(chapter) {
+    return state().worlds[chapter] ?? null;
+  },
+  completeWorld(chapter, moves) {
+    const s = state();
+    const prev = s.worlds[chapter];
+    const isBest = prev == null || moves < prev;
+    if (isBest) s.worlds[chapter] = moves;
+    save();
+    return isBest;
   },
   // Record a win; returns true if it's a new best.
   complete(index, moves) {

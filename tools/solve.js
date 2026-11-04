@@ -6,34 +6,15 @@
 // A level without a stored solution is always searched. Big levels may need
 // more memory:  node --max-old-space-size=6000 tools/solve.js --optimal
 import { Level } from '../src/core/Level.js';
-import { LEVELS } from '../src/core/levels.js';
+import { LEVELS, STAR_WORLDS } from '../src/core/levels.js';
+import { bfs } from '../src/core/search.js';
 
 const NAMES = { U: 'up', D: 'down', L: 'left', R: 'right' };
 
-// Breadth-first search. Returns { path, states, limitReached }.
+// Breadth-first search for the shortest solution (see src/core/search.js).
+// Returns { path, states, limitReached }.
 export function solve(def, limit = 3000000) {
-  const lvl = new Level(def);
-  const seen = new Set([lvl.key()]);
-  let frontier = [{ snap: lvl.snapshot(), path: '' }];
-  while (frontier.length) {
-    const next = [];
-    for (const { snap, path } of frontier) {
-      for (const dir of ['up', 'down', 'left', 'right']) {
-        restore(lvl, snap);
-        const ev = lvl.move(dir);
-        if (!ev || ev.type !== 'move') continue;
-        const p = path + dir[0].toUpperCase();
-        if (ev.won) return { path: p, states: seen.size, limitReached: false };
-        const k = lvl.key();
-        if (seen.has(k)) continue;
-        seen.add(k);
-        if (seen.size >= limit) return { path: null, states: seen.size, limitReached: true };
-        next.push({ snap: lvl.snapshot(), path: p });
-      }
-    }
-    frontier = next;
-  }
-  return { path: null, states: seen.size, limitReached: false };
+  return bfs(new Level(def), limit);
 }
 
 // Play a U/D/L/R move string; true if it ends with the level won.
@@ -43,16 +24,12 @@ export function replay(def, path) {
   return lvl.won;
 }
 
-function restore(lvl, s) {
-  lvl.restore(s);
-  lvl.history = [];
-}
-
 if (process.argv[1]?.endsWith('solve.js')) {
   const optimal = process.argv.includes('--optimal');
   let bad = 0;
-  LEVELS.forEach((def, i) => {
-    const label = `${i + 1}. ${def.name}`;
+  const all = [...LEVELS, ...STAR_WORLDS];
+  all.forEach((def, i) => {
+    const label = def.starWorld ? `Star World ${def.chapter + 1}. ${def.name}` : `${i + 1}. ${def.name}`;
     if (def.solution && !optimal) {
       const ok = replay(def, def.solution);
       if (!ok) bad++;

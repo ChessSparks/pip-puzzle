@@ -1,8 +1,9 @@
 import { Game } from './Game.js';
 import { createUI } from './ui/ui.js';
-import { platform } from './platform.js';
+import { platform } from '#platform';
 
-// Init the CrazyGames SDK first (it may swap the save storage), then start.
+// Init the portal SDK first (Y8 build),
+// then start. In the standalone build init() does nothing.
 platform.init().then(async () => {
   platform.loadingStart();
   const game = new Game(document.getElementById('scene'), createUI());

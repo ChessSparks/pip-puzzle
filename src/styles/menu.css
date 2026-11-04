@@ -88,6 +88,11 @@ button.round {
 }
 button.round:active { transform: translateY(4px); box-shadow: 0 1px 0 #cfc6fb; }
 button.round svg { width: 28px; height: 28px; }
+/* Sparks for the Great Portal (story progress). */
+.spark-count { color: #ff9a2e; font-weight: 700; margin-left: 6px; }
+
+/* Effects on Low / music off: the button looks switched off. */
+button.round.off { color: #a3a8c2; }
 
 /* Shared icon stroke style */
 button svg { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -128,6 +133,12 @@ button svg circle { fill: currentColor; }
 .level-tile .star { color: rgba(255, 255, 255, 0.35); text-shadow: none; }
 .level-tile .star.on { color: #ffd04d; }
 .level-tile.current { box-shadow: 0 4px 0 #4a31c9, 0 0 0 3px #ffb020; }
+/* Star World tile: a golden planet button at the end of each chapter. */
+.level-tile.star-world { background: linear-gradient(180deg, #ffd56b, #ff9f2e); box-shadow: 0 4px 0 #d9771a; }
+.level-tile.star-world:hover:not(:disabled) { background: linear-gradient(180deg, #ffe08a, #ffad45); }
+.level-tile.star-world.locked { background: #e6e8f3; box-shadow: 0 4px 0 #d3d7e8; color: #a3a8c2; }
+.level-tile.star-world.locked .lt-num { filter: grayscale(1); opacity: 0.55; }
+.level-tile.star-world .lt-num { font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(120, 50, 0, 0.35)); }
 .level-tile.locked { background: #e6e8f3; color: #a3a8c2; box-shadow: 0 4px 0 #d3d7e8; font-size: 15px; cursor: default; }
 .level-tile.locked .lt-stars { display: none; }
 .btn-back { align-self: flex-start; padding: 10px 16px; border-radius: 14px; font-size: 16px; }

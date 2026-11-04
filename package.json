@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "zip": "vite build && node tools/zip.mjs",
+    "build:y8": "vite build --mode y8 --outDir build-y8 --emptyOutDir",
+    "zip:y8": "npm run build:y8 && node tools/zip.mjs pip-y8.zip build-y8",
     "solve": "node tools/solve.js",
     "playtest": "node tools/playtest.mjs",
     "promo": "node tools/promo.mjs"

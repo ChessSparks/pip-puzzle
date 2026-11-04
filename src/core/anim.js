@@ -5,6 +5,14 @@ export const ease = {
   outQuad: (k) => 1 - (1 - k) * (1 - k),
   outCubic: (k) => 1 - Math.pow(1 - k, 3),
   inOutQuad: (k) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2),
+  outBounce: (k) => {
+    const n = 7.5625;
+    const d = 2.75;
+    if (k < 1 / d) return n * k * k;
+    if (k < 2 / d) return n * (k -= 1.5 / d) * k + 0.75;
+    if (k < 2.5 / d) return n * (k -= 2.25 / d) * k + 0.9375;
+    return n * (k -= 2.625 / d) * k + 0.984375;
+  },
   outBack: (k) => {
     const c1 = 1.70158;
     const c3 = c1 + 1;

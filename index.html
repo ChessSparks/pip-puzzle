@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Pip</title>
     <link rel="icon" href="data:," />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -32,16 +29,21 @@
 
     <!-- Big thumb-sized action buttons (bottom-left). -->
     <div class="actions">
-      <button id="btn-undo" class="action undo" title="Undo (Z)" aria-label="Undo">
+      <button id="btn-undo" class="action undo" title="Undo (U)" aria-label="Undo">
         <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg>
       </button>
       <button id="btn-restart" class="action restart" title="Restart (R)" aria-label="Restart">
         <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
       </button>
+      <button id="btn-hint" class="action ask" title="Ask Pip for a hint (H)" aria-label="Hint">
+        <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4" /><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z" /></svg>
+      </button>
     </div>
 
     <div class="hint" id="hint"></div>
-    <div class="controls-help">Arrows / WASD move · Z undo · R restart · drag to rotate view</div>
+    <!-- Speech balloon over Pip's head (placed each frame by Game). -->
+    <div class="bubble hidden" id="bubble"><div class="bubble-inner"></div></div>
+    <div class="controls-help">Arrows / WASD move · U undo · R restart · H hint · drag to rotate view</div>
 
     <div class="dpad" id="dpad">
       <button data-dir="up">▲</button>
@@ -52,7 +54,7 @@
 
     <div class="overlay hidden" id="win">
       <div class="card">
-        <h1>Level Complete!</h1>
+        <h1 id="win-title">Level Complete!</h1>
         <div class="stars" id="win-stars"></div>
         <p id="win-text"></p>
         <div class="card-buttons">
@@ -79,6 +81,12 @@
           </button>
           <div class="menu-icons">
             <button id="btn-sound" class="round" title="Sound" aria-label="Sound"></button>
+            <button id="btn-music" class="round" title="Music" aria-label="Music">
+              <svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /></svg>
+            </button>
+            <button id="btn-quality" class="round" title="Effects" aria-label="Effects quality">
+              <svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" /><circle cx="12" cy="12" r="2.4" /></svg>
+            </button>
           </div>
         </div>
       </div>
